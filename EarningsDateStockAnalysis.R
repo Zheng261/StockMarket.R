@@ -1,9 +1,5 @@
-install.packages("stocks")
-library(stocks)
 
-### So far- returns a data frame analyzing what happened the last x times that the stock experienced some amount of gain or loss
-### over some number of days.
-### Threshold must be a positive value - to look at losses of the same value rather than gains, set the drop parameter to TRUE.
+### Grabs earnings date data for the stock. ###
 getStockData <- function(stocksList,daysUntilPeak = 3, threshold = 0.05, drop = FALSE, open=FALSE, normalize=TRUE, daysTracked = 14, from="1950-01-01",to=Sys.Date()) {
   threshold = abs(threshold)
   thisStock= stocksList[1]
@@ -19,7 +15,7 @@ getStockData <- function(stocksList,daysUntilPeak = 3, threshold = 0.05, drop = 
   
   ### Initiaize list of stocks to have each day shifted forward to calculate change over time
   stockPricesShifted =  stockHistStats
-
+  
   for (day in 1:daysUntilPeak) {
     ### Deletes last row 
     stockPricesShifted =  stockPricesShifted[-c(nrow(stockPricesShifted)),]
@@ -46,7 +42,7 @@ getStockData <- function(stocksList,daysUntilPeak = 3, threshold = 0.05, drop = 
   } else {
     indexesPeaked = which(priceChanges > threshold)
   }
- 
+  
   #Removes everything that is within 2 of another entry, if we don't want to overweigh especially heavy peaks. We may want to just know what happens
   #immediately after the first peak.
   if (normalize) {
@@ -116,19 +112,19 @@ opt.fun <- function(expectedProfit,medianProfit,percentProfited,meanLoss,avgDays
 
 ## Finds the best policy to maximize gain and minimize probability of loss
 findBestPolicy <- function(stockPricesExt,opt.fun,percentGainLower = 0.03,percentGainUpper=0.10,percentLossLower=0.03,percentLossUpper=0.10,gainInt=0.005,lossInt=0.005) {
-   #All the gain and loss sell policy combinations to brute force over
-   gainXticks = seq(percentGainLower,percentGainUpper,gainInt)
-   lossXticks = -seq(percentLossLower,percentLossUpper,lossInt)
-   policyFrame = data.frame(matrix(nrow=length(gainXticks)*length(lossXticks),ncol=11))
-   colnames(policyFrame) <- c("SellAfterGain","SellAfterLoss","PolicyValue","ExpectedProfit","MedianProfit",
-                              "ProfitSD","PercentProfited","MeanLossGivenLoss","MeanGainGivenGain","AvgDaysTilSold","%Unsold")
-   policyFrame$"SellAfterGain" = rep(gainXticks,each=length(lossXticks))
-   policyFrame$"SellAfterLoss" = rep(lossXticks,times=length(lossXticks))
-   
-
-   for (gainSell in 1:length(gainXticks)) {
-     print(paste("Iteration:",gainSell,"out of",length(gainXticks)))
-     for (lossSell in 1:length(gainXticks)) {
+  #All the gain and loss sell policy combinations to brute force over
+  gainXticks = seq(percentGainLower,percentGainUpper,gainInt)
+  lossXticks = -seq(percentLossLower,percentLossUpper,lossInt)
+  policyFrame = data.frame(matrix(nrow=length(gainXticks)*length(lossXticks),ncol=11))
+  colnames(policyFrame) <- c("SellAfterGain","SellAfterLoss","PolicyValue","ExpectedProfit","MedianProfit",
+                             "ProfitSD","PercentProfited","MeanLossGivenLoss","MeanGainGivenGain","AvgDaysTilSold","%Unsold")
+  policyFrame$"SellAfterGain" = rep(gainXticks,each=length(lossXticks))
+  policyFrame$"SellAfterLoss" = rep(lossXticks,times=length(lossXticks))
+  
+  
+  for (gainSell in 1:length(gainXticks)) {
+    print(paste("Iteration:",gainSell,"out of",length(gainXticks)))
+    for (lossSell in 1:length(gainXticks)) {
       ### Separates the spike prices and the prices of the elapsed days
       actualPrices = stockPricesExt[,ncol(stockPricesExt)]
       daysElapsed = stockPricesExt[,(ncol(stockPricesExt)-1):1]
@@ -141,23 +137,23 @@ findBestPolicy <- function(stockPricesExt,opt.fun,percentGainLower = 0.03,percen
       colnames(profitFrame) <- c("Date","OrigValue","SoldValue","Profit%UnderPolicy","DaysTilSold")
       profitFrame$Date = index(stockPricesExt)
       profitFrame$OrigValue = actualPrices
-    
+      
       ## For each starting point, figure out what the expected profit is under this policy. We try to maximize it.
       for (spike in 1:nrow(stockPricesExt)) {
-          gainPlaces = which(percentChangeFrame[spike,] > gainXticks[gainSell])
-          lossPlaces = which(percentChangeFrame[spike,] < lossXticks[lossSell])
-      
-          # We sell the first time we either rise a certain % under our policy, or drop a certain % 
-          if (length(c(gainPlaces,lossPlaces)) > 0) {
-             timeToSell = min(c(lossPlaces,gainPlaces))
-          } else {
-             # Else we sell for the market price by the end of the two weeks, since afterwards the behavior of the stock cannot be accounted for.
-             timeToSell = ncol(percentChangeFrame)
-          }
-          #### Stores the number of days until we sold, the value at which we sold at, and the profit %
-          profitFrame[spike,"DaysTilSold"] = timeToSell
-          profitFrame[spike,"SoldValue"] = daysElapsed[spike,timeToSell]
-          profitFrame[spike,"Profit%UnderPolicy"] = percentChangeFrame[spike,timeToSell]
+        gainPlaces = which(percentChangeFrame[spike,] > gainXticks[gainSell])
+        lossPlaces = which(percentChangeFrame[spike,] < lossXticks[lossSell])
+        
+        # We sell the first time we either rise a certain % under our policy, or drop a certain % 
+        if (length(c(gainPlaces,lossPlaces)) > 0) {
+          timeToSell = min(c(lossPlaces,gainPlaces))
+        } else {
+          # Else we sell for the market price by the end of the two weeks, since afterwards the behavior of the stock cannot be accounted for.
+          timeToSell = ncol(percentChangeFrame)
+        }
+        #### Stores the number of days until we sold, the value at which we sold at, and the profit %
+        profitFrame[spike,"DaysTilSold"] = timeToSell
+        profitFrame[spike,"SoldValue"] = daysElapsed[spike,timeToSell]
+        profitFrame[spike,"Profit%UnderPolicy"] = percentChangeFrame[spike,timeToSell]
       }
       
       ### Begins calculating statistics for the entire profit frame ### 
@@ -192,21 +188,7 @@ findBestPolicy <- function(stockPricesExt,opt.fun,percentGainLower = 0.03,percen
       policyFrame[rightIndex,"MeanGainGivenGain"] = meanGain
       policyFrame[rightIndex,"AvgDaysTilSold"]= avgDaysTilSold
       policyFrame[rightIndex,"%Unsold"]= numHeldTilEnd/nrow(stockPricesExt)
-     }
-   }
-   return(policyFrame)
-}
-
-### Little bit of test code ###
-if (FALSE) {
-  stocksList = c("FB")
-  stockPricesExt <- getStockVolatility("FB",daysUntilPeak = 1, threshold = 0.03, drop = FALSE, open=FALSE, normalize=TRUE, daysTracked = 14)
-  #stockAnalyzed <- analyzeStock("FB",daysUntilPeak = 1, threshold = 0.03, drop = FALSE, open=FALSE, normalize=TRUE, daysTracked = 14)
-  policyFrame <- findBestPolicy(stockPricesExt,opt.fun)
-  
-  policyFrame[which(policyFrame$ExpectedProfit == max(policyFrame$ExpectedProfit)),]
-  policyFrame[which(policyFrame$PolicyValue == max(policyFrame$PolicyValue)),]
-  
-  policyFrame[which(policyFrame$ExpectedProfit == min(policyFrame$ExpectedProfit)),]
-  policyFrame[which(policyFrame$PolicyValue == min(policyFrame$PolicyValue)),]
+    }
+  }
+  return(policyFrame)
 }

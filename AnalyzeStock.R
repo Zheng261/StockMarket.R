@@ -1,15 +1,11 @@
 # Strat: BUY STOCK RIGHT BEFORE HITTING AFTER HOURS
-# STOCKS TEND TO GO UP AFTER HOURS NORMALLY 
 # BUY LONG STRADDLE TWO DAYS BEFORE EARNINGS, GET SOMETHING REASONABLY FAR AND ATM TO MAXIMIZE VEGA. LOOK FOR HIGH GAMMA TO PRICE RATIO. 
 # DELTA MUST BE THE SAME BETWEEN PRICE AND PUT, PREFERABLY HIGH GAMMA
 # SELL RIGHT BEFORE EARNINGS
 # ALL OF THIS IS BAD ADVICE TBH
 
-#Hold XONE until September 9
-#Sell at -7.80 
-#8.40*0.93
-stocksList = c("XONE")
-stockPricesExt <- GETSTOCKDATA(stocksList,daysUntilPeak = 3, threshold = 0.10, drop = FALSE, open=TRUE, normalize=TRUE, daysTracked = 14,from="2008-01-01",to=Sys.Date())
+stocksList = c("COST")
+stockPricesExt <- getStockData(stocksList,daysUntilPeak = 5, threshold = 0.10, drop = FALSE, open=TRUE, normalize=TRUE, daysTracked = 14,from="2008-01-01",to=Sys.Date())
 analysisDF
 stockPricesExt
 
@@ -21,6 +17,7 @@ mean((lolz[,6] - lolz[,7])/lolz[,7])
 mean(analysisDF$"%ChangeMin")
 boxplot(analysisDF$"%ChangeMin")
 nrow(analysisDF)
+
 #mean(analysisDF$"%ChangeMin" < -0.06)
 #mean(analysisDF[-which(analysisDF$"%ChangeMin" < -0.10),"%ChangeMax"])
 #mean(analysisDF[which(analysisDF$"%ChangeMin" < -0.10),"%ChangeMin"])
@@ -33,24 +30,7 @@ opt.fun <- function(expectedProfit,medianProfit,percentProfited,meanLoss,avgDays
 }
 
 
-policyFrame <- findBestPolicy(stockPricesExt,opt.fun,percentGainLower = 0.005,percentGainUpper=0.14,percentLossLower=0.005,percentLossUpper=0.14)
-#FB put sell 3% gain or 5% loss
-#172.94
-#SELL
-172.94*c(1.03,0.95)
-
-#Exone put sell 3% gain or 12% loss 
-#7.63
-7.63*c(1.03,0.88)
-
-#CMCM put sell 3% gain or 1.5% loss
-#10.95
-10.95*c(1.03,0.985)
-
-#RGIS
-# 20.44
-# SellAfterGain SellAfterLoss PolicyValue ExpectedProfit MedianProfit   ProfitSD PercentProfited MeanLossGivenLoss MeanGainGivenGain AvgDaysTilSold %Unsold
-#75  0.015        -0.095  -0.0455212    -0.03556863  -0.05237538 0.08339618             0.4       -0.09541946        0.05420761            4.5     0.2
+policyFrame <- findBestPolicy(stockPricesExt,opt.fun,percentGainLower = 0.005,percentGainUpper=0.12,percentLossLower=0.005,percentLossUpper=0.12)
 
 policyFrame[which(policyFrame$ExpectedProfit == max(policyFrame$ExpectedProfit)),]
 policyFrame[which(policyFrame$PolicyValue == max(policyFrame$PolicyValue)),]
